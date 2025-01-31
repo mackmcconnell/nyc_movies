@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;700&display=swap');@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #1a0f0f;
+  margin: 0;
+  min-height: 100vh;
+}
+
+.text-theme {
+  font-family: "Times New Roman", Times, serif;
+  font-weight: bold;
+  font-style: italic;
+  color: #FCEC73;
+  text-shadow: 0 0 18px rgba(252, 236, 115, 0.5);
+} 
