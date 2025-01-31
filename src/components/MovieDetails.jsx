@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MovieService } from '../services/movieService.js';
+import { MovieService } from '../../server/services/movieService.js';
 import LoadingScreen from './LoadingScreen';
 
 // Words that should not be capitalized in titles
