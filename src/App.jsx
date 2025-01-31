@@ -134,6 +134,12 @@ function App() {
       <div className="min-h-screen container mx-auto px-4 py-8">
         <Header />
         
+        {movies.length > 0 && (
+          <div className="text-xs text-[#FCEC73] opacity-50 text-center mb-4">
+            Last Updated: {new Date(movies[0]?.lastUpdated).toLocaleString()}
+          </div>
+        )}
+
         <Routes>
           <Route path="/" element={
             <>

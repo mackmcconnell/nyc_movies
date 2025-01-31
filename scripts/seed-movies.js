@@ -2,6 +2,7 @@ import { db } from './firebase-admin.js';
 import { MetrographScraper } from '../server/scrapers/metrograph.js';
 import { FilmForumScraper } from '../server/scrapers/filmforum.js';
 import dotenv from 'dotenv';
+import puppeteer from 'puppeteer';
 
 // Load environment variables
 dotenv.config();
@@ -38,6 +39,17 @@ async function seedMovies() {
   try {
     console.log('Starting movie database seed...');
     
+    // Configure Puppeteer for GitHub Actions environment
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    });
+
     // Get movies from scrapers
     console.log('Fetching movies from theaters...');
     const movies = await getAllMovies();
@@ -69,6 +81,8 @@ async function seedMovies() {
     console.log(`Successfully added ${movies.length} movies to database`);
 
     console.log('Seeding complete!');
+
+    await browser.close();
     process.exit(0);
   } catch (error) {
     console.error('Error seeding movies:', error);
