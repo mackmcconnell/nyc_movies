@@ -3,7 +3,7 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { MovieService } from '@server/services/movieService.js';
 import { db } from './config/firebase.js';
-import { collection } from 'firebase/firestore';
+import { collection, getDocs, query } from 'firebase/firestore';
 import TheaterFilter from './components/TheaterFilter';
 import MovieCard from './components/MovieCard';
 import Header from './components/Header';
@@ -50,10 +50,12 @@ function App() {
         throw new Error('Could not create Firestore reference');
       }
 
-      const data = await MovieService.getMovies({
-        start: new Date(),
-        end: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000)
-      });
+      // Just get movies from Firebase
+      const querySnapshot = await getDocs(query(moviesRef));
+      const data = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
 
       if (!data) {
         throw new Error('No data returned from MovieService');
