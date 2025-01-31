@@ -1,4 +1,8 @@
+import { useNavigate } from 'react-router-dom';
+
 function MovieCard({ movie }) {
+  const navigate = useNavigate();
+
   // Function to convert ALL CAPS to Title Case
   const toTitleCase = (str) => {
     // Words that should not be capitalized in titles
@@ -25,8 +29,14 @@ function MovieCard({ movie }) {
   };
 
   return (
-    <div className="bg-[#E1EBFD] p-4 flex flex-col h-full"
-         style={{ boxShadow: '4px 4px 4px rgba(136, 102, 93, 1)' }}>
+    <div 
+      className="bg-[#E1EBFD] p-4 flex flex-col h-full"
+      onClick={() => navigate(`/movie/${movie.id}`)}
+      style={{ 
+        boxShadow: '4px 4px 4px rgba(136, 102, 93, 1)',
+        cursor: 'pointer' 
+      }}
+    >
       <p className="font-['Source_Code_Pro'] text-[#8C8C8C] text-sm mb-1">
         {movie.theater}
       </p>

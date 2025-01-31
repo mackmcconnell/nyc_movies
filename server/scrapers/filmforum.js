@@ -1,6 +1,51 @@
 import puppeteer from 'puppeteer';
 
 export class FilmForumScraper {
+  async getMovieDetails(page, url) {
+    try {
+      await page.goto(url, { waitUntil: 'networkidle2' });
+      
+      const details = await page.evaluate(() => {
+        // Get the ticket link (current URL)
+        const ticketLink = window.location.href;
+        
+        // Get the trailer URL from the YouTube iframe
+        const trailerIframe = document.querySelector('iframe[src*="youtube"]');
+        const trailerUrl = trailerIframe?.src || null;
+
+        // Get director from text that starts with "DIRECTED BY"
+        const directorText = Array.from(document.querySelectorAll('p'))
+          .find(p => p.textContent.includes('DIRECTED BY'))
+          ?.textContent.trim();
+        let director = null;
+        if (directorText) {
+          // Remove "WRITTEN AND" if present
+          let cleanText = directorText.replace('WRITTEN AND', '').trim();
+          // Replace "DIRECTED BY" with "Directed by"
+          director = cleanText.replace('DIRECTED BY', 'Directed by').trim();
+        }
+
+        // Get year from text that includes a 4-digit number
+        const yearMatch = document.body.textContent.match(/\b(19|20)\d{2}\b/);
+        const year = yearMatch ? yearMatch[0] : null;
+
+        // Get runtime from text that includes "MIN."
+        const runtimeMatch = document.body.textContent.match(/(\d+)\s*MIN\./i);
+        const runtime = runtimeMatch ? `${runtimeMatch[1]} min` : null;
+
+        // Get description (first paragraph after director info)
+        const description = document.querySelector('.copy p')?.textContent.trim() || null;
+
+        return { director, year, runtime, description, ticketLink, trailerUrl };
+      });
+
+      return details;
+    } catch (error) {
+      console.error('Error getting movie details:', error);
+      return {};
+    }
+  }
+
   async scrape() {
     let browser;
     try {
@@ -57,6 +102,70 @@ export class FilmForumScraper {
 
       console.log('Page structure:', pageStructure);
 
+      // Get all movie links and details
+      const movieDetailsMap = await page.evaluate(async () => {
+        const movieLinks = Array.from(document.querySelectorAll('strong > a')).map(a => a.href);
+        const movieDetails = {};
+
+        for (const link of movieLinks) {
+          try {
+            const response = await fetch(link);
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            console.log('Fetching details for:', link);
+            // Extract movie details
+            const title = doc.querySelector('h2')?.textContent.trim();
+            if (!title) continue;
+
+            // Get the ticket link (the original URL)
+            const ticketLink = link;
+            
+            // Get the trailer URL from the YouTube iframe
+            const trailerIframe = doc.querySelector('iframe[src*="youtube"]');
+            const trailerUrl = trailerIframe?.src || null;
+
+            // Get director from text that starts with "DIRECTED BY"
+            const directorText = Array.from(doc.querySelectorAll('p'))
+              .find(p => p.textContent.includes('DIRECTED BY'))
+              ?.textContent.trim();
+            let director = null;
+            if (directorText) {
+              // Remove "WRITTEN AND" if present
+              let cleanText = directorText.replace('WRITTEN AND', '').trim();
+              // Replace "DIRECTED BY" with "Directed by"
+              director = cleanText.replace('DIRECTED BY', 'Directed by').trim();
+            }
+
+            // Get year from text that includes a 4-digit number
+            const yearMatch = doc.body.textContent.match(/\b(19|20)\d{2}\b/);
+            const year = yearMatch ? yearMatch[0] : null;
+
+            // Get runtime from text that includes "MIN."
+            const runtimeMatch = doc.body.textContent.match(/(\d+)\s*MIN\./i);
+            const runtime = runtimeMatch ? `${runtimeMatch[1]} min` : null;
+
+            // Get description
+            const description = doc.querySelector('.copy p')?.textContent.trim() || null;
+            console.log('Found description:', description ? 'Yes' : 'No');
+
+            movieDetails[title] = {
+              director,
+              year,
+              runtime,
+              description,
+              ticketLink,
+              trailerUrl
+            };
+          } catch (error) {
+            console.error('Error fetching movie details:', error);
+          }
+        }
+
+        return movieDetails;
+      });
+
       // Get content for all days
       const rawContent = await page.evaluate(() => {
         const allMovies = [];
@@ -68,9 +177,10 @@ export class FilmForumScraper {
           const movieList = [];
           const paragraphs = dayDiv.querySelectorAll('p');
           
-          paragraphs.forEach(p => {
+          paragraphs.forEach(async p => {
             let title = '';
             let times = [];
+            let movieDetails = {};
 
             // Get the title
             const strongLink = p.querySelector('strong > a');
@@ -83,6 +193,28 @@ export class FilmForumScraper {
                 .join(' ');
               
               title = prefix + (additionalText || titleText);
+              
+              // Get the movie URL for details
+              const movieUrl = strongLink.href;
+              if (movieUrl) {
+                // Get director from text that starts with "DIRECTED BY"
+                const directorText = Array.from(document.querySelectorAll('p'))
+                  .find(p => p.textContent.includes('DIRECTED BY'))
+                  ?.textContent.trim();
+                movieDetails.director = directorText?.replace('DIRECTED BY', '').trim();
+
+                // Get year from text that includes a 4-digit number
+                const yearMatch = document.body.textContent.match(/\b(19|20)\d{2}\b/);
+                movieDetails.year = yearMatch ? yearMatch[0] : null;
+
+                // Get runtime from text that includes "MIN."
+                const runtimeMatch = document.body.textContent.match(/(\d+)\s*MIN\./i);
+                movieDetails.runtime = runtimeMatch ? `${runtimeMatch[1]} min` : null;
+
+                // Get description (first paragraph after director info)
+                const description = document.querySelector('.copy p')?.textContent.trim() || null;
+                movieDetails.description = description;
+              }
             }
 
             // Get showtimes
@@ -93,7 +225,8 @@ export class FilmForumScraper {
             if (title && times.length > 0) {
               movieList.push({
                 title: title.replace(/\s+/g, ' ').trim(),
-                showtimes: times
+                showtimes: times,
+                ...movieDetails
               });
             }
           });
@@ -153,6 +286,12 @@ export class FilmForumScraper {
               theater: 'Film Forum',
               date: showDate,
               time: formattedTime,
+              director: movieDetailsMap[title]?.director || null,
+              year: movieDetailsMap[title]?.year || null,
+              runtime: movieDetailsMap[title]?.runtime || null,
+              description: movieDetailsMap[title]?.description || null,
+              ticketLink: movieDetailsMap[title]?.ticketLink || null,
+              trailerUrl: movieDetailsMap[title]?.trailerUrl || '/no_trailer_available.jpg',
               lastUpdated: new Date().toISOString()
             };
 

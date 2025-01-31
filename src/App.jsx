@@ -7,6 +7,9 @@ import { collection } from 'firebase/firestore';
 import TheaterFilter from './components/TheaterFilter';
 import MovieCard from './components/MovieCard';
 import Header from './components/Header';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import MovieDetails from './components/MovieDetails';
+import LoadingScreen from './components/LoadingScreen';
 
 function App() {
   const [movies, setMovies] = useState([]);
@@ -120,71 +123,80 @@ function App() {
     })
   }));
 
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
   return (
-    <div className="min-h-screen container mx-auto px-4 py-8">
-      <Header />
-      
-      <div className="flex flex-wrap gap-4 mb-6 items-center justify-center md:justify-start">
-        <div className="flex items-center gap-2">
-          <span className="text-theme">Date:</span>
-          <DatePicker
-            selected={selectedDate}
-            onChange={date => setSelectedDate(date)}
-            className="border p-2 rounded bg-[#2a1f1f] text-theme border-[#FCEC73] text-center md:text-left"
-            dateFormat="MMMM d, yyyy"
-            minDate={minDate}
-            maxDate={maxDate}
-            placeholderText="Select a date"
-          />
-        </div>
-        <div className="w-full md:w-auto flex justify-center md:justify-start mt-4 md:mt-0">
-          <TheaterFilter 
-            selectedTheater={selectedTheater}
-            onChange={setSelectedTheater}
-          />
-        </div>
+    <BrowserRouter>
+      <div className="min-h-screen container mx-auto px-4 py-8">
+        <Header />
+        
+        <Routes>
+          <Route path="/" element={
+            <>
+              <div className="flex flex-wrap gap-4 mb-6 items-center justify-center md:justify-start">
+                <div className="flex items-center gap-2">
+                  <span className="text-theme">Date:</span>
+                  <DatePicker
+                    selected={selectedDate}
+                    onChange={date => setSelectedDate(date)}
+                    className="border p-2 rounded bg-[#2a1f1f] text-theme border-[#FCEC73] text-center md:text-left"
+                    dateFormat="MMMM d, yyyy"
+                    minDate={minDate}
+                    maxDate={maxDate}
+                    placeholderText="Select a date"
+                  />
+                </div>
+                <div className="w-full md:w-auto flex justify-center md:justify-start mt-4 md:mt-0">
+                  <TheaterFilter 
+                    selectedTheater={selectedTheater}
+                    onChange={setSelectedTheater}
+                  />
+                </div>
+              </div>
+
+              {/* Increased gap after pills */}
+              <div className="mb-20"></div>
+
+              {error && (
+                <div className="p-4 border border-[#FCEC73] rounded mb-4">
+                  <p className="text-theme">Error: {error}</p>
+                </div>
+              )}
+
+              {moviesWithShowtimes.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {moviesWithShowtimes.map((movie, index) => (
+                    <MovieCard 
+                      key={`${movie.title}-${movie.theater}-${index}`} 
+                      movie={movie}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-theme py-10">
+                  No movies scheduled for this date at {selectedTheater === 'all' ? 'any theater' : selectedTheater}
+                </div>
+              )}
+            </>
+          } />
+          <Route path="/movie/:movieId" element={<MovieDetails />} />
+        </Routes>
+
+        <footer className="mt-12 text-center pb-4">
+          <p className="font-['Source_Code_Pro'] text-[#FCEC73] text-sm"
+             style={{ textShadow: '0 0 18px rgba(252, 236, 115, 0.5)' }}>
+            Made by <a 
+              href="mailto:bff@omg.lol" 
+              className="underline decoration-[#FCEC73] hover:opacity-80 transition-opacity"
+            >
+              Maqq
+            </a>
+          </p>
+        </footer>
       </div>
-
-      {/* Increased gap after pills */}
-      <div className="mb-20"></div>
-
-      {loading && (
-        <div className="text-center text-theme">Loading movies...</div>
-      )}
-
-      {error && (
-        <div className="p-4 border border-[#FCEC73] rounded mb-4">
-          <p className="text-theme">Error: {error}</p>
-        </div>
-      )}
-
-      {moviesWithShowtimes.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {moviesWithShowtimes.map((movie, index) => (
-            <MovieCard 
-              key={`${movie.title}-${movie.theater}-${index}`} 
-              movie={movie}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center text-theme py-10">
-          No movies scheduled for this date at {selectedTheater === 'all' ? 'any theater' : selectedTheater}
-        </div>
-      )}
-
-      <footer className="mt-12 text-center pb-4">
-        <p className="font-['Source_Code_Pro'] text-[#FCEC73] text-sm"
-           style={{ textShadow: '0 0 18px rgba(252, 236, 115, 0.5)' }}>
-          Made by <a 
-            href="mailto:bff@omg.lol" 
-            className="underline decoration-[#FCEC73] hover:opacity-80 transition-opacity"
-          >
-            Maqq
-          </a>
-        </p>
-      </footer>
-    </div>
+    </BrowserRouter>
   );
 }
 

@@ -11,7 +11,10 @@ export async function testFilmForum() {
     if (!moviesByDate[movie.date]) {
       moviesByDate[movie.date] = [];
     }
-    moviesByDate[movie.date].push(`${movie.time} - ${movie.title}`);
+    moviesByDate[movie.date].push({
+      ...movie,
+      displayString: `${movie.time} - ${movie.title}`
+    });
   });
 
   // Get today's date and next two days
@@ -29,7 +32,17 @@ export async function testFilmForum() {
     console.log(`\n${dayName}, ${date} Showtimes:`);
     console.log('----------------------------------------');
     if (moviesByDate[date]) {
-      moviesByDate[date].sort().forEach(movie => console.log(movie));
+      moviesByDate[date].sort((a, b) => a.time.localeCompare(b.time)).forEach(movie => {
+        console.log(movie.displayString);
+        if (movie.director) console.log(`  Director: ${movie.director}`);
+        if (movie.year) console.log(`  Year: ${movie.year}`);
+        if (movie.runtime) console.log(`  Runtime: ${movie.runtime}`);
+        if (movie.description) {
+          console.log('  Description:');
+          console.log(`    ${movie.description.slice(0, 150)}...`);
+        }
+        console.log(''); // Empty line between movies
+      });
     }
     console.log('----------------------------------------');
   });
