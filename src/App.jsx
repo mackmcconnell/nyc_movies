@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
-import { MovieService } from '../server/services/movieService.js';
+import { MovieService } from '@server/services/movieService.js';
 import { db } from './config/firebase.js';
 import { collection } from 'firebase/firestore';
 import TheaterFilter from './components/TheaterFilter';
