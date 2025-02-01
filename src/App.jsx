@@ -41,6 +41,8 @@ function App() {
 
   useEffect(() => {
     fetchMovies();
+    // Log which Firebase project we're using
+    console.log('Using Firebase Project:', import.meta.env.VITE_FIREBASE_PROJECT_ID);
   }, []);
 
   async function fetchMovies() {
@@ -134,12 +136,6 @@ function App() {
       <div className="min-h-screen container mx-auto px-4 py-8">
         <Header />
         
-        {movies.length > 0 && (
-          <div className="text-xs text-[#FCEC73] opacity-50 text-center mb-4">
-            Last Updated: {new Date(movies[0]?.lastUpdated).toLocaleString()}
-          </div>
-        )}
-
         <Routes>
           <Route path="/" element={
             <>
@@ -202,6 +198,11 @@ function App() {
               Maqq
             </a>
           </p>
+          {movies.length > 0 && (
+            <p className="font-['Source_Code_Pro'] text-[#FCEC73] text-xs opacity-50 mt-2">
+              Last Updated: {new Date(movies[0]?.lastUpdated).toLocaleString()}
+            </p>
+          )}
         </footer>
       </div>
     </BrowserRouter>

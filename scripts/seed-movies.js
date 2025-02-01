@@ -68,13 +68,23 @@ async function seedMovies() {
     });
 
     // Add new movies
-    movies.forEach(movie => {
-      const newMovieRef = moviesRef.doc();
-      batch.set(newMovieRef, {
-        ...movie,
-        lastUpdated: new Date().toISOString()
-      });
-    });
+    for (const movie of movies) {
+      // Generate a unique ID based on movie properties
+      const movieId = `${movie.title}-${movie.theater}-${movie.date}-${movie.time}`
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-');
+      
+      try {
+        const newMovieRef = moviesRef.doc();
+        batch.set(newMovieRef, {
+          id: movieId,
+          ...movie,
+          lastUpdated: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Error adding movie:', movie.title, error);
+      }
+    }
 
     // Commit the batch
     await batch.commit();

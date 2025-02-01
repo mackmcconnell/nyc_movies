@@ -21,11 +21,23 @@ export class MovieService {
   static async getMovieById(id) {
     try {
       const moviesRef = collection(db, 'movies');
-      const q = query(moviesRef, where('id', '==', id));
+      // First try exact ID match
+      let q = query(moviesRef, where('id', '==', id));
       const querySnapshot = await getDocs(q);
       
       if (querySnapshot.empty) {
-        return null;
+        // If not found, try partial match on title
+        q = query(moviesRef, where('title', '==', decodeURIComponent(id.split('-')[0])));
+        const titleSnapshot = await getDocs(q);
+        
+        if (titleSnapshot.empty) {
+          return null;
+        }
+        
+        return {
+          id: titleSnapshot.docs[0].id,
+          ...titleSnapshot.docs[0].data()
+        };
       }
       
       return {
