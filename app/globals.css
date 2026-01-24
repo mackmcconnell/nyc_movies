@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+  --muted: #999999;
+  --border: #333333;
+
+  /* Bauhaus Color Scheme */
+  --color-yellow: #fdd835;
+  --color-red: #e53935;
+  --color-blue: #1e88e5;
+  --color-orange: #ff9800;
+  --color-green: #4caf50;
+  --color-pink: #e91e63;
+  --color-cyan: #00bcd4;
+  --color-purple: #9c27b0;
+
+  /* Aliases for common use */
+  --primary: var(--color-yellow);
+  --secondary: var(--color-red);
+  --tertiary: var(--color-blue);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-tertiary: var(--tertiary);
+  --color-border: var(--border);
+  --color-yellow: var(--color-yellow);
+  --color-red: var(--color-red);
+  --color-blue: var(--color-blue);
+  --color-orange: var(--color-orange);
+  --color-green: var(--color-green);
+  --color-pink: var(--color-pink);
+  --color-cyan: var(--color-cyan);
+  --color-purple: var(--color-purple);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Bauhaus Typography - Bold, Geometric, Uppercase */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+h1 { font-size: 3rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.25rem; }
+
+/* Focus states */
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: var(--primary);
+  color: var(--background);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
 }

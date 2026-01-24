@@ -20,6 +20,16 @@ const theaters = [
     url: "https://filmforum.org",
     slug: "film-forum",
   },
+  {
+    name: "Quad Cinema",
+    url: "https://quadcinema.com",
+    slug: "quad-cinema",
+  },
+  {
+    name: "IFC Center",
+    url: "https://www.ifccenter.com",
+    slug: "ifc-center",
+  },
 ];
 
 for (const theater of theaters) {

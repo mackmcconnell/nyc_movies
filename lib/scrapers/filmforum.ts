@@ -68,7 +68,7 @@ interface JsonLdCollectionPage {
 /**
  * Fetch a page and return cheerio instance
  */
-async function fetchPage(url: string): Promise<cheerio.CheerioAPI> {
+async function fetchPage(url: string) {
   const response = await fetch(url, {
     headers: {
       "User-Agent":
@@ -87,7 +87,7 @@ async function fetchPage(url: string): Promise<cheerio.CheerioAPI> {
 /**
  * Extract JSON-LD data from a page
  */
-function extractJsonLd($: cheerio.CheerioAPI): unknown[] {
+function extractJsonLd($: ReturnType<typeof cheerio.load>): unknown[] {
   const jsonLdScripts: unknown[] = [];
 
   $('script[type="application/ld+json"]').each((_, el) => {
@@ -142,7 +142,7 @@ async function getFilmUrls(): Promise<string[]> {
  * "DIRECTED BY [NAME]" followed by year/runtime/country info
  */
 function parseMovieMetadata(
-  $: cheerio.CheerioAPI
+  $: ReturnType<typeof cheerio.load>
 ): Pick<ScrapedMovie, "director" | "year" | "runtime" | "description"> {
   let director: string | null = null;
   let year: number | null = null;
@@ -256,7 +256,7 @@ function convertTo24Hour(timeStr: string): string {
  * - We find the <p> containing the link to THIS movie and extract times from its <span> children
  */
 function parseShowtimes(
-  $: cheerio.CheerioAPI,
+  $: ReturnType<typeof cheerio.load>,
   ticketUrl: string | null,
   weekDates: Map<string, string>,
   movieSlug: string

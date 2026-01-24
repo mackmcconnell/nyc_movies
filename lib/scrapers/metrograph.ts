@@ -363,7 +363,7 @@ export async function scrapeMetrograph(options: {
   for (const date of dates) {
     console.log(`[Metrograph] Collecting film IDs for ${date}...`);
     try {
-      const filmIds = await scrapeFilmIdsForDate(date);
+      const { filmIds } = await scrapeCalendarPage(date);
       filmIds.forEach((id) => allFilmIds.add(id));
       console.log(`[Metrograph] Found ${filmIds.size} films for ${date}`);
     } catch (error) {
