@@ -1,7 +1,7 @@
 ---
 # nyc_movies-qth6
 title: Build Metrograph scraper
-status: todo
+status: done
 type: task
 created_at: 2026-01-24T19:11:08Z
 updated_at: 2026-01-24T19:11:08Z
