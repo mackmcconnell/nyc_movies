@@ -192,6 +192,20 @@ async function scrapeFilmDetail(slug: string): Promise<ScrapedMovie | null> {
       }
     });
 
+    // Image: Look for og:image meta tag or poster images
+    let imageUrl: string | null = null;
+    const ogImage = $('meta[property="og:image"]').attr("content");
+    if (ogImage) {
+      imageUrl = ogImage;
+    }
+    // Fallback: look for film poster
+    if (!imageUrl) {
+      const posterImg = $(".film-poster img, .poster img, .ifc-col img").first().attr("src");
+      if (posterImg) {
+        imageUrl = posterImg.startsWith("http") ? posterImg : `${BASE_URL}${posterImg}`;
+      }
+    }
+
     return {
       title,
       director,
@@ -199,6 +213,7 @@ async function scrapeFilmDetail(slug: string): Promise<ScrapedMovie | null> {
       runtime,
       description,
       trailer_url: trailerUrl,
+      image_url: imageUrl,
       slug,
     };
   } catch (error) {

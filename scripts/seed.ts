@@ -1,10 +1,10 @@
-import { db, initDb } from "../lib/db";
+import { localDb, initLocalDb } from "../lib/db-local";
 
 // Initialize the database (creates tables if they don't exist)
-initDb();
+initLocalDb();
 
 // Insert initial theaters using INSERT OR IGNORE to avoid duplicates
-const insertTheater = db.prepare(`
+const insertTheater = localDb.prepare(`
   INSERT OR IGNORE INTO Theater (name, url, slug)
   VALUES (?, ?, ?)
 `);
@@ -38,5 +38,5 @@ for (const theater of theaters) {
 
 console.log("Database seeded successfully!");
 console.log("Theaters inserted:");
-const allTheaters = db.prepare("SELECT * FROM Theater").all();
+const allTheaters = localDb.prepare("SELECT * FROM Theater").all();
 console.table(allTheaters);

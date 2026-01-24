@@ -6,14 +6,14 @@
  * Usage: npx tsx scripts/scrape.ts
  */
 
-import { db } from "../lib/db";
+import { localDb } from "../lib/db-local";
 import {
   insertMovie,
   insertShowtime,
   clearShowtimes,
   clearMovies,
   getTheaterBySlug,
-} from "../lib/queries";
+} from "../lib/queries-local";
 import { scrapeMetrograph } from "../lib/scrapers/metrograph";
 import { scrapeFilmForum } from "../lib/scrapers/filmforum";
 import { scrapeQuadCinema } from "../lib/scrapers/quadcinema";
@@ -40,6 +40,7 @@ function getOrCreateMovie(
     runtime: number | null;
     description: string | null;
     trailer_url: string | null;
+    image_url: string | null;
   },
   existingMovies: Map<string, number>
 ): number {
@@ -99,6 +100,7 @@ async function scrapeAndSaveMetrograph(
           runtime: movie.runtime,
           description: movie.description,
           trailer_url: movie.trailer_url,
+          image_url: movie.image_url,
         },
         existingMovies
       );
@@ -170,6 +172,7 @@ async function scrapeAndSaveFilmForum(
           runtime: movie.runtime,
           description: movie.description,
           trailer_url: movie.trailer_url,
+          image_url: movie.image_url,
         },
         existingMovies
       );
@@ -252,6 +255,7 @@ async function scrapeAndSaveQuadCinema(
           runtime: movie.runtime,
           description: movie.description,
           trailer_url: movie.trailer_url,
+          image_url: movie.image_url,
         },
         existingMovies
       );
@@ -329,6 +333,7 @@ async function scrapeAndSaveIFCCenter(
           runtime: movie.runtime,
           description: movie.description,
           trailer_url: movie.trailer_url,
+          image_url: movie.image_url,
         },
         existingMovies
       );
@@ -434,8 +439,8 @@ async function main(): Promise<void> {
   }
 
   // Verify data was saved
-  const movieCount = db.prepare("SELECT COUNT(*) as count FROM Movie").get() as { count: number };
-  const showtimeCount = db.prepare("SELECT COUNT(*) as count FROM Showtime").get() as { count: number };
+  const movieCount = localDb.prepare("SELECT COUNT(*) as count FROM Movie").get() as { count: number };
+  const showtimeCount = localDb.prepare("SELECT COUNT(*) as count FROM Showtime").get() as { count: number };
 
   console.log("\nDatabase verification:");
   console.log(`  Movies in DB:    ${movieCount.count}`);

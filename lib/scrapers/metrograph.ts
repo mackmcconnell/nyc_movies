@@ -180,6 +180,22 @@ async function scrapeFilmDetail(vistaFilmId: string, referenceYear: number): Pro
     });
   }
 
+  // Image: Look for og:image meta tag or poster images
+  let imageUrl: string | null = null;
+  const ogImage = $('meta[property="og:image"]').attr("content");
+  if (ogImage) {
+    imageUrl = ogImage;
+  }
+  // Fallback: look for main poster image
+  if (!imageUrl) {
+    $("img").each((_, el) => {
+      const src = $(el).attr("src");
+      if (src && !imageUrl && (src.includes("poster") || src.includes("film") || src.includes("movie"))) {
+        imageUrl = src.startsWith("http") ? src : `${BASE_URL}${src}`;
+      }
+    });
+  }
+
   const movie: ScrapedMovie = {
     title,
     director,
@@ -187,6 +203,7 @@ async function scrapeFilmDetail(vistaFilmId: string, referenceYear: number): Pro
     runtime,
     description,
     trailer_url: trailerUrl,
+    image_url: imageUrl,
     vista_film_id: vistaFilmId,
   };
 

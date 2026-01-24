@@ -41,6 +41,8 @@ function formatDate(dateStr: string): string {
   return `${dayName}, ${monthName} ${dayNum}`;
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function MovieDetailPage({
   params,
 }: {
@@ -53,7 +55,7 @@ export default async function MovieDetailPage({
     notFound();
   }
 
-  const movie = getMovieById(movieId);
+  const movie = await getMovieById(movieId);
 
   if (!movie) {
     notFound();
@@ -115,9 +117,9 @@ export default async function MovieDetailPage({
         </p>
       )}
 
-      {/* Trailer */}
-      {movie.trailer_url && (() => {
-        const youtubeId = getYouTubeId(movie.trailer_url);
+      {/* Trailer or Image */}
+      {(() => {
+        const youtubeId = movie.trailer_url ? getYouTubeId(movie.trailer_url) : null;
         if (youtubeId) {
           return (
             <div className="mb-8">
@@ -133,16 +135,30 @@ export default async function MovieDetailPage({
             </div>
           );
         }
-        return (
-          <a
-            href={movie.trailer_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block px-4 py-2 bg-primary text-black text-xs font-black uppercase tracking-widest hover:bg-yellow-300 transition-colors mb-8"
-          >
-            Watch Trailer
-          </a>
-        );
+        if (movie.trailer_url) {
+          return (
+            <a
+              href={movie.trailer_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-4 py-2 bg-primary text-black text-xs font-black uppercase tracking-widest hover:bg-yellow-300 transition-colors mb-8"
+            >
+              Watch Trailer
+            </a>
+          );
+        }
+        if (movie.image_url) {
+          return (
+            <div className="mb-8">
+              <img
+                src={movie.image_url}
+                alt={movie.title}
+                className="max-w-2xl w-full border-2 border-border"
+              />
+            </div>
+          );
+        }
+        return null;
       })()}
 
       {/* Showtimes */}

@@ -201,6 +201,20 @@ async function scrapeFilmDetail(slug: string): Promise<Omit<ScrapedMovie, "slug"
       }
     });
 
+    // Image: Look for og:image meta tag or poster images
+    let imageUrl: string | null = null;
+    const ogImage = $('meta[property="og:image"]').attr("content");
+    if (ogImage) {
+      imageUrl = ogImage;
+    }
+    // Fallback: look for film poster
+    if (!imageUrl) {
+      const posterImg = $(".film-poster img, .poster img, .film-image img").first().attr("src");
+      if (posterImg) {
+        imageUrl = posterImg.startsWith("http") ? posterImg : `${BASE_URL}${posterImg}`;
+      }
+    }
+
     return {
       title,
       director,
@@ -208,6 +222,7 @@ async function scrapeFilmDetail(slug: string): Promise<Omit<ScrapedMovie, "slug"
       runtime,
       description,
       trailer_url: trailerUrl,
+      image_url: imageUrl,
     };
   } catch (error) {
     console.error(`[QuadCinema] Error scraping film detail ${slug}:`, error);

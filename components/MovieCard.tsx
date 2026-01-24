@@ -1,3 +1,5 @@
+"use client";
+
 interface Showtime {
   time: string;
   theater_name: string;
@@ -12,6 +14,7 @@ interface MovieCardProps {
   year: number | null;
   runtime: number | null;
   showtimes: Showtime[];
+  isToday?: boolean;
 }
 
 // Group showtimes by theater
@@ -33,6 +36,16 @@ function formatTime(time: string): string {
   return `${hour12}:${minutes.toString().padStart(2, "0")}${period}`;
 }
 
+// Check if a showtime has passed (ET timezone)
+function hasTimePassed(time: string): boolean {
+  const now = new Date();
+  const etTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const [hours, minutes] = time.split(":").map(Number);
+  const showtimeMinutes = hours * 60 + minutes;
+  const currentMinutes = etTime.getHours() * 60 + etTime.getMinutes();
+  return currentMinutes > showtimeMinutes;
+}
+
 export default function MovieCard({
   id,
   title,
@@ -40,6 +53,7 @@ export default function MovieCard({
   year,
   runtime,
   showtimes,
+  isToday = false,
 }: MovieCardProps) {
   const groupedShowtimes = groupByTheater(showtimes);
 
@@ -57,25 +71,32 @@ export default function MovieCard({
             {title}
           </a>
           {meta && (
-            <div className="text-xs text-neutral-500 tracking-wide">{meta}</div>
+            <div className="text-xs text-muted tracking-wide">{meta}</div>
           )}
         </div>
 
         {/* Showtimes by theater */}
-        <div className="flex-1 flex flex-col gap-1 text-sm">
+        <div className="flex-1 flex flex-col gap-2 text-sm items-end">
           {Array.from(groupedShowtimes.entries()).map(([theater, times]) => (
-            <div key={theater} className="flex items-center justify-between gap-4">
-              <span className="text-neutral-500 text-xs uppercase tracking-wider">{theater}</span>
+            <div key={theater} className="flex flex-col gap-1 items-end">
+              <span className="text-muted text-xs uppercase tracking-wider">{theater}</span>
               <div className="flex flex-wrap justify-end gap-1">
-                {times.map((st, i) => (
-                  <a
-                    key={i}
-                    href={st.ticket_url || "#"}
-                    className="w-14 text-center py-0.5 bg-primary text-black text-xs font-bold uppercase tracking-wide hover:bg-yellow-300 transition-colors"
-                  >
-                    {formatTime(st.time)}
-                  </a>
-                ))}
+                {times.map((st, i) => {
+                  const isPast = isToday && hasTimePassed(st.time);
+                  return (
+                    <a
+                      key={i}
+                      href={st.ticket_url || "#"}
+                      className={`w-14 text-center py-0.5 text-xs font-bold uppercase tracking-wide transition-colors ${
+                        isPast
+                          ? "bg-border text-muted line-through pointer-events-none"
+                          : "bg-primary text-black hover:bg-yellow-300"
+                      }`}
+                    >
+                      {formatTime(st.time)}
+                    </a>
+                  );
+                })}
               </div>
             </div>
           ))}

@@ -16,7 +16,7 @@
 
 import * as cheerio from "cheerio";
 import { Movie, Showtime } from "../types";
-import { getTheaterBySlug } from "../queries";
+import { getTheaterBySlug } from "../queries-local";
 
 const BASE_URL = "https://filmforum.org";
 const THEATER_SLUG = "film-forum";
@@ -31,6 +31,7 @@ interface ScrapedMovie {
   runtime: number | null;
   description: string | null;
   trailer_url: string | null;
+  image_url: string | null;
   slug: string;
   sourceUrl: string;
 }
@@ -365,6 +366,20 @@ async function scrapeFilmPage(url: string, weekDates: Map<string, string>): Prom
     // Parse showtimes for this specific movie (using the slug to identify it in tabs)
     const showtimes = parseShowtimes($, ticketUrl, weekDates, slug);
 
+    // Image: Look for og:image meta tag or poster images
+    let imageUrl: string | null = null;
+    const ogImage = $('meta[property="og:image"]').attr("content");
+    if (ogImage) {
+      imageUrl = ogImage;
+    }
+    // Fallback: look for film poster
+    if (!imageUrl) {
+      const posterImg = $(".film-poster img, .poster img, .film-image img").first().attr("src");
+      if (posterImg) {
+        imageUrl = posterImg.startsWith("http") ? posterImg : `${BASE_URL}${posterImg}`;
+      }
+    }
+
     const movie: ScrapedMovie = {
       title: cleanTitle(title),
       director: metadata.director,
@@ -372,6 +387,7 @@ async function scrapeFilmPage(url: string, weekDates: Map<string, string>): Prom
       runtime: metadata.runtime,
       description: metadata.description,
       trailer_url: null, // Film Forum doesn't consistently provide trailer links
+      image_url: imageUrl,
       slug,
       sourceUrl: url,
     };
@@ -460,6 +476,7 @@ export async function scrapeFilmForum(): Promise<{
         runtime: result.movie.runtime,
         description: result.movie.description,
         trailer_url: result.movie.trailer_url,
+        image_url: result.movie.image_url,
       };
 
       movies.push(movieData);

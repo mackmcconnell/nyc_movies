@@ -13,6 +13,7 @@ export interface Movie {
   runtime: number | null;
   description: string | null;
   trailer_url: string | null;
+  image_url: string | null;
 }
 
 export interface Showtime {

@@ -8,9 +8,12 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "npx tsx scripts/seed.ts",
-    "scrape": "npx tsx scripts/scrape.ts"
+    "scrape": "npx tsx scripts/scrape.ts",
+    "sync": "npx tsx scripts/sync-to-turso.ts",
+    "scrape:deploy": "npx tsx scripts/scrape.ts && npx tsx scripts/sync-to-turso.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.0",
     "better-sqlite3": "^12.6.2",
     "cheerio": "^1.2.0",
     "next": "16.1.4",

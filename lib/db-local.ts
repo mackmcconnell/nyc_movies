@@ -1,20 +1,16 @@
-import { createClient } from "@libsql/client";
+import Database from "better-sqlite3";
+import path from "path";
 
-const url = process.env.TURSO_DATABASE_URL;
-const authToken = process.env.TURSO_AUTH_TOKEN;
+const dbPath = path.join(process.cwd(), "data", "movies.db");
 
-if (!url) {
-  throw new Error("TURSO_DATABASE_URL is not set");
-}
+export const localDb = new Database(dbPath);
 
-export const db = createClient({
-  url,
-  authToken,
-});
+// Enable foreign keys
+localDb.pragma("foreign_keys = ON");
 
-export async function initDb(): Promise<void> {
+export function initLocalDb(): void {
   // Create Theater table
-  await db.execute(`
+  localDb.exec(`
     CREATE TABLE IF NOT EXISTS Theater (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -24,7 +20,7 @@ export async function initDb(): Promise<void> {
   `);
 
   // Create Movie table
-  await db.execute(`
+  localDb.exec(`
     CREATE TABLE IF NOT EXISTS Movie (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
@@ -38,7 +34,7 @@ export async function initDb(): Promise<void> {
   `);
 
   // Create Showtime table
-  await db.execute(`
+  localDb.exec(`
     CREATE TABLE IF NOT EXISTS Showtime (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       movie_id INTEGER NOT NULL,
@@ -50,4 +46,11 @@ export async function initDb(): Promise<void> {
       FOREIGN KEY (theater_id) REFERENCES Theater(id)
     )
   `);
+
+  // Migration: Add image_url column if it doesn't exist
+  try {
+    localDb.exec("ALTER TABLE Movie ADD COLUMN image_url TEXT");
+  } catch {
+    // Column already exists, ignore error
+  }
 }
