@@ -26,14 +26,8 @@ jobs:
       - name: Create data directory
         run: mkdir -p data
 
-      - name: Initialize database and seed theaters
-        run: npx tsx scripts/seed.ts
-
-      - name: Run scraper
-        run: npm run scrape
-
-      - name: Sync to Turso
+      - name: Refresh data (seed, scrape, sync to Turso)
         env:
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-        run: npm run sync
+        run: npm run refresh

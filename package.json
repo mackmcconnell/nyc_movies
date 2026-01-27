@@ -10,7 +10,8 @@
     "seed": "npx tsx scripts/seed.ts",
     "scrape": "npx tsx scripts/scrape.ts",
     "sync": "npx tsx scripts/sync-to-turso.ts",
-    "scrape:deploy": "npx tsx scripts/scrape.ts && npx tsx scripts/sync-to-turso.ts"
+    "refresh": "npm run seed && npm run scrape && npm run sync",
+    "refresh:local": "npm run seed && npm run scrape"
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",
