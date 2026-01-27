@@ -28,7 +28,27 @@ async function syncToTurso() {
   console.log("Clearing Turso tables...");
   await turso.execute("DELETE FROM Showtime");
   await turso.execute("DELETE FROM Movie");
+  await turso.execute("DELETE FROM Theater");
   console.log("Tables cleared.\n");
+
+  // Sync theaters first (required for foreign keys)
+  const theaters = localDb.prepare("SELECT * FROM Theater").all() as {
+    id: number;
+    name: string;
+    url: string;
+    slug: string;
+  }[];
+
+  console.log(`Syncing ${theaters.length} theaters...`);
+
+  for (const theater of theaters) {
+    await turso.execute({
+      sql: `INSERT INTO Theater (id, name, url, slug)
+            VALUES (?, ?, ?, ?)`,
+      args: [theater.id, theater.name, theater.url, theater.slug],
+    });
+  }
+  console.log(`Theaters synced.\n`);
 
   // Sync movies
   const movies = localDb.prepare("SELECT * FROM Movie").all() as {
