@@ -18,6 +18,7 @@ import { scrapeMetrograph } from "../lib/scrapers/metrograph";
 import { scrapeFilmForum } from "../lib/scrapers/filmforum";
 import { scrapeQuadCinema } from "../lib/scrapers/quadcinema";
 import { scrapeIFCCenter } from "../lib/scrapers/ifccenter";
+import { scrapeFilmNoirCinema } from "../lib/scrapers/filmnoircinema";
 
 interface ScrapeSummary {
   theater: string;
@@ -371,6 +372,84 @@ async function scrapeAndSaveIFCCenter(
 }
 
 /**
+ * Scrape Film Noir Cinema and save to database
+ */
+async function scrapeAndSaveFilmNoirCinema(
+  existingMovies: Map<string, number>
+): Promise<ScrapeSummary> {
+  const summary: ScrapeSummary = {
+    theater: "Film Noir Cinema",
+    moviesScraped: 0,
+    showtimesScraped: 0,
+    moviesSaved: 0,
+    showtimesSaved: 0,
+  };
+
+  try {
+    console.log("\n[Film Noir Cinema] Starting scrape...");
+
+    const theater = getTheaterBySlug("film-noir-cinema");
+    if (!theater) {
+      throw new Error("Film Noir Cinema theater not found in database. Run seed script first.");
+    }
+
+    const result = await scrapeFilmNoirCinema();
+    summary.moviesScraped = result.movies.length;
+    summary.showtimesScraped = result.showtimes.length;
+
+    console.log(`[Film Noir Cinema] Scraped ${result.movies.length} movies and ${result.showtimes.length} showtimes`);
+
+    // Create a map of slug to movie_id for linking showtimes
+    const slugToMovieId = new Map<string, number>();
+
+    // Insert movies
+    for (const movie of result.movies) {
+      const movieId = getOrCreateMovie(
+        {
+          title: movie.title,
+          director: movie.director,
+          year: movie.year,
+          runtime: movie.runtime,
+          description: movie.description,
+          trailer_url: movie.trailer_url,
+          image_url: movie.image_url,
+        },
+        existingMovies
+      );
+      slugToMovieId.set(movie.slug, movieId);
+      summary.moviesSaved++;
+    }
+
+    console.log(`[Film Noir Cinema] Saved ${summary.moviesSaved} movies`);
+
+    // Insert showtimes
+    for (const showtime of result.showtimes) {
+      const movieId = slugToMovieId.get(showtime.slug);
+      if (!movieId) {
+        console.warn(`[Film Noir Cinema] No movie found for slug: ${showtime.slug}`);
+        continue;
+      }
+
+      insertShowtime({
+        movie_id: movieId,
+        theater_id: theater.id,
+        date: showtime.date,
+        time: showtime.time,
+        ticket_url: showtime.ticket_url,
+      });
+      summary.showtimesSaved++;
+    }
+
+    console.log(`[Film Noir Cinema] Saved ${summary.showtimesSaved} showtimes`);
+  } catch (error) {
+    summary.error = error instanceof Error ? error.message : String(error);
+    console.error(`[Film Noir Cinema] Error: ${summary.error}`);
+  }
+
+  return summary;
+}
+
+/**
  * Main scrape orchestrator
  */
 async function main(): Promise<void> {
@@ -406,6 +485,10 @@ async function main(): Promise<void> {
   // Scrape IFC Center
   const ifcCenterSummary = await scrapeAndSaveIFCCenter(existingMovies);
   summaries.push(ifcCenterSummary);
+
+  // Scrape Film Noir Cinema
+  const filmNoirCinemaSummary = await scrapeAndSaveFilmNoirCinema(existingMovies);
+  summaries.push(filmNoirCinemaSummary);
 
   // Print final summary
   console.log("\n" + "=".repeat(60));

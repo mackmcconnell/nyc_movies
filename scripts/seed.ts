@@ -30,6 +30,11 @@ const theaters = [
     url: "https://www.ifccenter.com",
     slug: "ifc-center",
   },
+  {
+    name: "Film Noir Cinema",
+    url: "https://www.filmnoircinema.com",
+    slug: "film-noir-cinema",
+  },
 ];
 
 for (const theater of theaters) {
