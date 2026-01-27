@@ -26,6 +26,9 @@ jobs:
       - name: Create data directory
         run: mkdir -p data
 
+      - name: Initialize database and seed theaters
+        run: npx tsx scripts/seed.ts
+
       - name: Run scraper
         run: npm run scrape
 
