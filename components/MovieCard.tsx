@@ -85,12 +85,12 @@ export default function MovieCard({
           <button
             onClick={handleToggle}
             disabled={!selected && !canAddMore}
-            className={`w-5 h-5 flex-shrink-0 border-2 transition-colors flex items-center justify-center ${
+            className={`w-3 h-3 flex-shrink-0 rounded-full border transition-colors mt-1 ${
               selected
                 ? "bg-primary border-primary"
                 : canAddMore
-                  ? "border-border hover:border-primary"
-                  : "border-border opacity-50 cursor-not-allowed"
+                  ? "border-muted hover:border-primary"
+                  : "border-muted opacity-40 cursor-not-allowed"
             }`}
             title={
               selected
@@ -99,17 +99,7 @@ export default function MovieCard({
                   ? "Add to compare"
                   : "Compare limit reached (5)"
             }
-          >
-            {selected && (
-              <svg viewBox="0 0 20 20" fill="black" className="w-3 h-3">
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            )}
-          </button>
+          />
           <div>
             <a href={`/movies/${id}`} className="font-bold uppercase tracking-tight text-foreground hover:text-primary transition-colors">
               {title}
