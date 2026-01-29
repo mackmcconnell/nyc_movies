@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const moviesWithShowtimes = getMoviesByDate(date);
+  const moviesWithShowtimes = await getMoviesByDate(date);
 
   const movies = moviesWithShowtimes.map((movie) => {
     // Sort showtimes by time
