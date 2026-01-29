@@ -111,11 +111,11 @@ export default function MovieCard({
         </div>
 
         {/* Showtimes by theater */}
-        <div className="flex-1 flex flex-col gap-2 text-sm items-end">
+        <div className="flex-1 flex flex-col gap-2 text-sm mt-2 sm:mt-0 sm:items-end">
           {Array.from(groupedShowtimes.entries()).map(([theater, times]) => (
-            <div key={theater} className="flex flex-col gap-1 items-end">
+            <div key={theater} className="flex flex-col gap-1 sm:items-end">
               <span className="text-muted text-xs uppercase tracking-wider">{theater}</span>
-              <div className="flex flex-wrap justify-end gap-1">
+              <div className="flex flex-wrap sm:justify-end gap-1">
                 {times.map((st, i) => {
                   const isPast = isToday && hasTimePassed(st.time);
                   return (
