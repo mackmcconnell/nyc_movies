@@ -1,5 +1,7 @@
 "use client";
 
+import { useCompare } from "@/components/compare/CompareProvider";
+
 interface Showtime {
   time: string;
   theater_name: string;
@@ -55,6 +57,8 @@ export default function MovieCard({
   showtimes,
   isToday = false,
 }: MovieCardProps) {
+  const { isSelected, addMovie, removeMovie, canAddMore } = useCompare();
+  const selected = isSelected(id);
   const groupedShowtimes = groupByTheater(showtimes);
 
   // Build metadata string
@@ -62,17 +66,58 @@ export default function MovieCard({
     .filter(Boolean)
     .join(" · ");
 
+  const handleToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (selected) {
+      removeMovie(id);
+    } else if (canAddMore) {
+      addMovie(id);
+    }
+  };
+
   return (
     <div className="py-4 border-b border-border">
       <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
         {/* Title and meta */}
-        <div className="sm:w-1/3 min-w-0">
-          <a href={`/movies/${id}`} className="font-bold uppercase tracking-tight text-foreground hover:text-primary transition-colors">
-            {title}
-          </a>
-          {meta && (
-            <div className="text-xs text-muted tracking-wide">{meta}</div>
-          )}
+        <div className="sm:w-1/3 min-w-0 flex items-start gap-2">
+          {/* Compare Toggle Button */}
+          <button
+            onClick={handleToggle}
+            disabled={!selected && !canAddMore}
+            className={`w-5 h-5 flex-shrink-0 border-2 transition-colors flex items-center justify-center ${
+              selected
+                ? "bg-primary border-primary"
+                : canAddMore
+                  ? "border-border hover:border-primary"
+                  : "border-border opacity-50 cursor-not-allowed"
+            }`}
+            title={
+              selected
+                ? "Remove from compare"
+                : canAddMore
+                  ? "Add to compare"
+                  : "Compare limit reached (5)"
+            }
+          >
+            {selected && (
+              <svg viewBox="0 0 20 20" fill="black" className="w-3 h-3">
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            )}
+          </button>
+          <div>
+            <a href={`/movies/${id}`} className="font-bold uppercase tracking-tight text-foreground hover:text-primary transition-colors">
+              {title}
+            </a>
+            {meta && (
+              <div className="text-xs text-muted tracking-wide">{meta}</div>
+            )}
+          </div>
         </div>
 
         {/* Showtimes by theater */}

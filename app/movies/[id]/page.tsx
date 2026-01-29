@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getMovieById } from "@/lib/queries";
+import { getYouTubeId } from "@/lib/youtube";
 
 interface ShowtimesByDate {
   [date: string]: {
@@ -15,19 +16,6 @@ function formatTime(time: string): string {
   const period = hours >= 12 ? "p" : "a";
   const hour12 = hours % 12 || 12;
   return `${hour12}:${minutes.toString().padStart(2, "0")}${period}`;
-}
-
-// Extract YouTube video ID from various URL formats
-function getYouTubeId(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s?]+)/,
-    /youtube\.com\/v\/([^&\s?]+)/,
-  ];
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) return match[1];
-  }
-  return null;
 }
 
 // Format date for display
