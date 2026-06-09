@@ -3,15 +3,17 @@
  *
  * Scrapes movie listings and showtimes from filmforum.org
  *
- * Site structure analysis (verified 2026-01-24):
+ * Site structure analysis (verified 2026-06-09):
  * - Homepage/schedule page: Has JSON-LD with ScreeningEvent objects but startDate/endDate are empty
  * - Film detail pages at: /film/[slug] contain:
  *   - JSON-LD with offers.url for ticket links (https://my.filmforum.org/events/[slug])
  *   - HTML with director, year, runtime in metadata section
- *   - Showtimes in tab-based structure (#tabs-0 through #tabs-6 for SAT-FRI)
+ *   - Showtimes in tab-based structure (#tabs-0 through #tabs-6), one tab per day
+ *   - IMPORTANT: tabs are a rolling 7-day window starting TODAY (e.g. on a
+ *     Tuesday: #tabs-0=TUE ... #tabs-6=MON), NOT a fixed Saturday-first week.
+ *     Each tab's day is read from its nav label <a href="#tabs-N">DAY</a>.
  *   - IMPORTANT: Each tab contains ALL movies for that day, not just the current movie
  *   - Movie showtimes are listed next to their title link within each tab
- * - Schedule organized by week starting Saturday
  */
 
 import * as cheerio from "cheerio";
@@ -20,9 +22,6 @@ import { getTheaterBySlug } from "../queries-local";
 
 const BASE_URL = "https://filmforum.org";
 const THEATER_SLUG = "film-forum";
-
-// Day of week order on Film Forum (tabs 0-6)
-const DAY_ORDER = ["SAT", "SUN", "MON", "TUE", "WED", "THU", "FRI"] as const;
 
 interface ScrapedMovie {
   title: string;
@@ -189,39 +188,33 @@ function parseMovieMetadata(
 }
 
 /**
- * Calculate the dates for the current Film Forum week
- * Film Forum week runs Saturday to Friday
+ * Calculate the dates for Film Forum's showtime tabs.
  *
- * If today is Saturday or later in the week, use this week's Saturday.
- * If today is earlier (unlikely since Film Forum weeks start Saturday),
- * use the previous Saturday.
+ * The site renders a rolling 7-day window of day tabs starting with TODAY
+ * (e.g. on a Tuesday the tabs read TUE, WED, THU, FRI, SAT, SUN, MON), not a
+ * fixed Saturday-first week. We therefore map each day-of-week abbreviation to
+ * its concrete date across the next 7 days. parseShowtimes() then resolves each
+ * tab to a date by reading that tab's actual day label rather than assuming a
+ * fixed tab-index-to-weekday order.
  */
 function calculateWeekDates(referenceDate: Date = new Date()): Map<string, string> {
   const dateMap = new Map<string, string>();
 
-  // Get the current day of week (0 = Sunday, 6 = Saturday)
-  const dayOfWeek = referenceDate.getDay();
+  // JS Date.getDay(): 0 = Sunday ... 6 = Saturday
+  const dayAbbrevByIndex = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-  // Calculate days since the most recent Saturday
-  // Sunday = 1, Monday = 2, Tuesday = 3, Wednesday = 4, Thursday = 5, Friday = 6, Saturday = 0
-  const daysSinceSaturday = dayOfWeek === 6 ? 0 : (dayOfWeek + 1);
+  // Map the next 7 days (today through today+6) by their weekday abbreviation.
+  // Seven consecutive days cover each weekday exactly once.
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(referenceDate);
+    date.setDate(referenceDate.getDate() + i);
+    date.setHours(0, 0, 0, 0);
 
-  // Calculate this week's Saturday
-  const saturday = new Date(referenceDate);
-  saturday.setDate(referenceDate.getDate() - daysSinceSaturday);
-  saturday.setHours(0, 0, 0, 0);
-
-  // Map each day abbreviation to its date
-  // SAT = 0, SUN = 1, MON = 2, TUE = 3, WED = 4, THU = 5, FRI = 6
-  for (let i = 0; i < DAY_ORDER.length; i++) {
-    const date = new Date(saturday);
-    date.setDate(saturday.getDate() + i);
-    // Format as YYYY-MM-DD
+    const abbrev = dayAbbrevByIndex[date.getDay()];
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
-    const dateStr = `${year}-${month}-${day}`;
-    dateMap.set(DAY_ORDER[i], dateStr);
+    dateMap.set(abbrev, `${year}-${month}-${day}`);
   }
 
   return dateMap;
@@ -264,14 +257,17 @@ function parseShowtimes(
 ): ScrapedShowtime[] {
   const showtimes: ScrapedShowtime[] = [];
 
-  // Look for tab panels containing showtimes
-  for (let i = 0; i < DAY_ORDER.length; i++) {
-    const dayAbbrev = DAY_ORDER[i];
-    const date = weekDates.get(dayAbbrev);
-    if (!date) continue;
-
+  // Look for tab panels containing showtimes.
+  // The site renders 7 day tabs (#tabs-0..#tabs-6) starting from today, so the
+  // tab index no longer maps to a fixed weekday. Resolve each tab's date by
+  // reading its actual nav label (e.g. <a href="#tabs-3">FRI</a>).
+  for (let i = 0; i < 7; i++) {
     const tabContent = $(`#tabs-${i}`);
     if (tabContent.length === 0) continue;
+
+    const dayAbbrev = $(`a[href="#tabs-${i}"]`).first().text().trim().toUpperCase();
+    const date = weekDates.get(dayAbbrev);
+    if (!date) continue;
 
     // Find the link to this movie within the tab
     // The link href contains the movie slug: /film/[slug]
