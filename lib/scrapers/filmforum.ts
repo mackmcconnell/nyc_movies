@@ -169,17 +169,12 @@ function parseMovieMetadata(
     runtime = parseInt(yearRuntimeMatch[2], 10);
   }
 
-  // Try to find description in the main content area
-  // Look for paragraphs that contain substantial text (not navigation/headers)
-  $("p").each((_, el) => {
+  // The film synopsis lives inside <div class="copy">. Scope to it: a bare
+  // $("p") scan picks up the theater <address> block (209 West Houston St...)
+  // that appears earlier in the DOM and is long enough to pass a length filter.
+  $("div.copy p").each((_, el) => {
     const text = $(el).text().trim();
-    // Description paragraphs are typically longer and contain film-related content
-    if (
-      text.length > 100 &&
-      !text.includes("SHOWTIMES") &&
-      !text.includes("TICKETS") &&
-      !description
-    ) {
+    if (text.length > 50 && !description) {
       description = text;
     }
   });
@@ -362,6 +357,18 @@ async function scrapeFilmPage(url: string, weekDates: Map<string, string>): Prom
     // Parse showtimes for this specific movie (using the slug to identify it in tabs)
     const showtimes = parseShowtimes($, ticketUrl, weekDates, slug);
 
+    // Trailer: in-release films embed a YouTube trailer in <div class="flex-video">
+    // under <h3 id="trailer">. Scope to it so the GTM iframe and the footer
+    // "Film Forum on YouTube" channel link are not mistaken for a trailer.
+    let trailerUrl: string | null = null;
+    const trailerSrc =
+      $('div.flex-video iframe[src*="youtube"], div.flex-video iframe[src*="youtu.be"], div.flex-video iframe[src*="vimeo"]').attr("src") ||
+      $("h3#trailer").nextAll(".audio-container").find("iframe").attr("src") ||
+      null;
+    if (trailerSrc && /youtube\.com\/embed|youtu\.be|vimeo\.com|youtube-nocookie/.test(trailerSrc)) {
+      trailerUrl = trailerSrc.startsWith("//") ? `https:${trailerSrc}` : trailerSrc;
+    }
+
     // Image: Look for og:image meta tag or poster images
     let imageUrl: string | null = null;
     const ogImage = $('meta[property="og:image"]').attr("content");
@@ -382,7 +389,7 @@ async function scrapeFilmPage(url: string, weekDates: Map<string, string>): Prom
       year: metadata.year,
       runtime: metadata.runtime,
       description: metadata.description,
-      trailer_url: null, // Film Forum doesn't consistently provide trailer links
+      trailer_url: trailerUrl,
       image_url: imageUrl,
       slug,
       sourceUrl: url,

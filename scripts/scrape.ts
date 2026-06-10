@@ -9,6 +9,7 @@
 import { localDb } from "../lib/db-local";
 import {
   insertMovie,
+  backfillMovieFields,
   insertShowtime,
   clearShowtimes,
   clearMovies,
@@ -51,6 +52,9 @@ function getOrCreateMovie(
   // Check if we already have this movie
   const existingId = existingMovies.get(normalizedTitle);
   if (existingId !== undefined) {
+    // Same film at another theater — backfill any fields this copy can supply
+    // that the first insert left empty (e.g. a trailer or synopsis).
+    backfillMovieFields(existingId, movieData);
     return existingId;
   }
 

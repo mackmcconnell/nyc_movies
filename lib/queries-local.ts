@@ -32,6 +32,34 @@ export function insertMovie(movie: Omit<Movie, "id">): number {
   return result.lastInsertRowid as number;
 }
 
+// When the same film is screened at multiple theaters it is deduplicated by
+// title, so only the first theater's metadata is inserted. This backfills any
+// columns that are still NULL from a later theater's richer data (e.g. one
+// theater has a trailer/synopsis the other lacks). COALESCE keeps existing
+// non-null values, so first-writer-wins for fields that are already populated.
+const backfillMovieStmt = localDb.prepare(`
+  UPDATE Movie SET
+    director = COALESCE(director, ?),
+    year = COALESCE(year, ?),
+    runtime = COALESCE(runtime, ?),
+    description = COALESCE(description, ?),
+    trailer_url = COALESCE(trailer_url, ?),
+    image_url = COALESCE(image_url, ?)
+  WHERE id = ?
+`);
+
+export function backfillMovieFields(id: number, movie: Omit<Movie, "id">): void {
+  backfillMovieStmt.run(
+    movie.director,
+    movie.year,
+    movie.runtime,
+    movie.description,
+    movie.trailer_url,
+    movie.image_url,
+    id
+  );
+}
+
 const insertShowtimeStmt = localDb.prepare(`
   INSERT INTO Showtime (movie_id, theater_id, date, time, ticket_url)
   VALUES (?, ?, ?, ?, ?)

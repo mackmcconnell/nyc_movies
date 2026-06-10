@@ -113,8 +113,27 @@ async function scrapeProgram(): Promise<ScrapeResult> {
     const time = parseTime(timeStr);
     if (!time.match(/^\d{2}:\d{2}$/)) return;
 
-    // Get description
-    const description = $event.find(".eventlist-description .sqs-html-content p").first().text().trim() || null;
+    // Get description. The first <p> is often just a "US. 1979" country/year
+    // metadata line, so prefer the first substantial paragraph that isn't that.
+    const $desc = $event.find(".eventlist-description .sqs-html-content");
+    const paragraphs = $desc
+      .find("p")
+      .map((_, p) => $(p).text().trim())
+      .get()
+      .filter(Boolean);
+    const description =
+      paragraphs.find((t) => t.length > 40 && !/^[A-Z]{2}\.?\s*\d{4}/.test(t)) ||
+      paragraphs[0] ||
+      null;
+
+    // Trailer: when present, it's a labeled "Trailer:" link inside the
+    // description HTML (e.g. <a href="https://youtu.be/...">). Most films have none.
+    let trailer_url: string | null =
+      $desc.find('a[href*="youtu.be"], a[href*="youtube.com"], a[href*="vimeo.com"]').first().attr("href") || null;
+    if (!trailer_url) {
+      const m = $desc.text().match(/Trailer:?\s*(https?:\/\/(?:youtu\.be|(?:www\.)?youtube\.com|vimeo\.com)\/\S+)/i);
+      if (m) trailer_url = m[1];
+    }
 
     // Get event URL for potential detail scraping
     const eventHref = $event.find(".eventlist-title-link").attr("href") || "";
@@ -131,7 +150,7 @@ async function scrapeProgram(): Promise<ScrapeResult> {
         year: null,
         runtime: null,
         description,
-        trailer_url: null,
+        trailer_url,
         image_url: null,
         slug,
       });

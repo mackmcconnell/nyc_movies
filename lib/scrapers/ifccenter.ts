@@ -173,7 +173,12 @@ async function scrapeFilmDetail(slug: string): Promise<ScrapedMovie | null> {
         text.length > 100 &&
         !text.match(/^(sat|sun|mon|tue|wed|thu|fri)/i) &&
         !text.match(/^(january|february|march|april|may|june|july|august|september|october|november|december)/i) &&
-        !text.match(/Q&A/i)
+        !text.match(/Q&A/i) &&
+        // Skip open-caption notices and the standard advisory boilerplate so the
+        // real synopsis (not the notice) is captured for caption-enabled films.
+        !text.match(/please note that there are additional showtimes/i) &&
+        !text.match(/screen with open captions|open captions \(on-screen/i) &&
+        !text.match(/IFC Center does not generally provide advisories/i)
       ) {
         contentParagraphs.push(text);
       }
@@ -183,14 +188,31 @@ async function scrapeFilmDetail(slug: string): Promise<ScrapedMovie | null> {
       description = contentParagraphs[0];
     }
 
-    // Trailer URL: Look for YouTube/Vimeo embeds
+    // Trailer URL: IFC injects the trailer client-side, so it is NOT in the
+    // static film-page HTML. The page exposes the WordPress post id (on the
+    // trailer modal, and on <body class="postid-XXXX">); the embed is served by
+    // GET /ajax/load_trailer?film_id=<postId> as {data:{embed:"<iframe ...>"}}.
     let trailerUrl: string | null = null;
-    $("iframe").each((_, el) => {
-      const src = $(el).attr("src");
-      if (src && (src.includes("youtube.com") || src.includes("youtu.be") || src.includes("vimeo.com"))) {
-        trailerUrl = src;
+    const filmId =
+      $(".trailer-overlay-btn").attr("data-remodal-target") ||
+      $("[data-remodal-id]").attr("data-remodal-id") ||
+      ($("body").attr("class")?.match(/postid-(\d+)/)?.[1] ?? null);
+
+    if (filmId) {
+      try {
+        const trailerJson = await fetchPage(`${BASE_URL}/ajax/load_trailer?film_id=${filmId}`);
+        const parsed = JSON.parse(trailerJson);
+        const embedHtml: string | false | undefined = parsed?.data?.embed || parsed?.data?.brightcove;
+        if (embedHtml && typeof embedHtml === "string") {
+          const src = cheerio.load(embedHtml)("iframe").attr("src");
+          if (src && /youtube\.com|youtu\.be|vimeo\.com|youtube-nocookie/.test(src)) {
+            trailerUrl = src.replace(/&amp;/g, "&");
+          }
+        }
+      } catch {
+        // No trailer available for this film, or endpoint changed — leave null.
       }
-    });
+    }
 
     // Image: Look for og:image meta tag or poster images
     let imageUrl: string | null = null;
