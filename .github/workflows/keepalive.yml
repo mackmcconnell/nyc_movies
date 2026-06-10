@@ -1,0 +1,40 @@
+name: Keepalive
+
+# Prevents GitHub from auto-disabling the scheduled scraper (scrape.yml) after
+# 60 days of repo inactivity. Runs weekly; only pushes a commit once the repo
+# is approaching the inactivity threshold, which resets the clock for ALL
+# scheduled workflows (including this one), making it self-sustaining.
+
+on:
+  schedule:
+    - cron: '0 8 * * 1' # Every Monday 08:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Commit keepalive only if repo is going stale
+        run: |
+          LAST=$(git log -1 --format=%ct)
+          NOW=$(date +%s)
+          AGE_DAYS=$(( (NOW - LAST) / 86400 ))
+          echo "Last commit was $AGE_DAYS days ago (auto-disable triggers at 60)."
+          if [ "$AGE_DAYS" -ge 40 ]; then
+            date -u +"%Y-%m-%dT%H:%M:%SZ" > .github/keepalive-timestamp.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .github/keepalive-timestamp.txt
+            git commit -m "chore: keepalive to keep scheduled scraper enabled"
+            git push
+            echo "Pushed keepalive commit."
+          else
+            echo "Repo active enough; no commit needed."
+          fi
